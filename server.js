@@ -37,7 +37,7 @@ app.use((error, req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  console.log(req)
+  console.log(`Unhandled route: ${req.method} ${req.originalUrl}`);
   const error = new HttpError("Could not find this route", 404);
   next(error);
 });
