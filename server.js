@@ -37,6 +37,7 @@ app.use((error, req, res, next) => {
 });
 
 app.use((req, res, next) => {
+  console.log(req)
   const error = new HttpError("Could not find this route", 404);
   next(error);
 });
