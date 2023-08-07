@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
 const { validationResult } = require("express-validator");
+const { default: axios } = require("axios");
 
 // const getUsers = async (req, res, next) => {};
 
@@ -143,13 +144,10 @@ const signUpGoogle = async (req, res, next) => {
 
   let user ;
   try {
-    const response = await fetch(
-      "https://www.googleapis.com/userinfo/v2/me",
-      {
-        headers: { Authorization: `Bearer ${code}` },
-      }
-    );
-    user = await response.json();
+    const response = await axios.get("https://www.googleapis.com/userinfo/v2/me", {
+        headers: { Authorization: `Bearer ${code}` }
+    });
+    user = response.data;
     
   } catch (error) {
     console.log(error);
