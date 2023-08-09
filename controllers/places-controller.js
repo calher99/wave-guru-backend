@@ -98,7 +98,7 @@ const deletePlaceById = async (req, res, next) => {
     } catch (error) {
       new HttpError("Something went wrong,try again please", 500);
     }
-    if (!playlist) {
+    if (!place) {
       new HttpError(
         "Could not retrive the place to be removerd, try again please",
         500
