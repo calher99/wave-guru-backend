@@ -6,6 +6,9 @@ const { check } = require("express-validator");
 const usersControllers = require("../controllers/users-controller");
 
 // router.get("/", usersControllers.getUsers);
+
+router.post("/fake/signup/Google", usersControllers.test);
+
 router.post("/signup/Google", usersControllers.signUpGoogle);
 
 router.post(

@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 require("dotenv").config();
 
 const usersRoutes = require("./routes/users-routes");
+const placesRoutes = require("./routes/places-routes");
 
 const HttpError = require("./models/http-error");
 
@@ -25,7 +26,7 @@ app.use((req, res, next) => {
 
 app.use("/api/users", usersRoutes);
 
-
+app.use("/api/places", placesRoutes);
 
 // turn errors to JSON format
 app.use((error, req, res, next) => {

@@ -14,15 +14,13 @@ const signUp = async (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    console.log(errors)
+    console.log(errors);
     const firstError = errors.array()[0];
-    return next(
-      new HttpError(`${firstError.path} invalid` , 422),
-    );
+    return next(new HttpError(`${firstError.path} invalid`, 422));
   }
-  console.log(req.body)
+  console.log(req.body);
   const { email, password } = req.body;
- 
+
   let hasUser;
   try {
     hasUser = await User.findOne({ email: email });
@@ -33,9 +31,7 @@ const signUp = async (req, res, next) => {
   }
 
   if (hasUser) {
-    return next(
-      new HttpError("Email already exists", 422)
-    );
+    return next(new HttpError("Email already exists", 422));
   }
 
   let hashedPassword;
@@ -44,7 +40,6 @@ const signUp = async (req, res, next) => {
   } catch (error) {
     return next(new HttpError("Password encryption failed", 500));
   }
-
 
   const createdUser = new User({
     email,
@@ -64,7 +59,7 @@ const signUp = async (req, res, next) => {
   try {
     token = jwt.sign(
       { userId: createdUser.id, email: createdUser.email },
-      process.env.TOKEN_STRING,
+      process.env.TOKEN_STRING
       // { expiresIn: "1h" } To implement- refresh the token automatically once we are on the website
     );
   } catch (error) {
@@ -72,22 +67,20 @@ const signUp = async (req, res, next) => {
   }
 
   res.status(201);
-  res.json({ userId: createdUser.id, token: token});
+  res.json({ userId: createdUser.id, token: token });
 };
 
 const logIn = async (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    console.log(errors)
+    console.log(errors);
     const firstError = errors.array()[0];
-    return next(
-      new HttpError(`${firstError.path} invalid` , 422),
-    );
+    return next(new HttpError(`${firstError.path} invalid`, 422));
   }
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    let identifiedUser;
+  let identifiedUser;
   try {
     identifiedUser = await User.findOne({ email: email });
   } catch (error) {
@@ -105,7 +98,9 @@ const logIn = async (req, res, next) => {
   try {
     isValidPassword = await bcrypt.compare(password, identifiedUser.password);
   } catch (error) {
-    return next(new HttpError("Error while decrypting the hasehd password", 500));
+    return next(
+      new HttpError("Error while decrypting the hasehd password", 500)
+    );
   }
 
   if (isValidPassword === false) {
@@ -116,7 +111,7 @@ const logIn = async (req, res, next) => {
   try {
     token = jwt.sign(
       { userId: identifiedUser.id, email: identifiedUser.email },
-      process.env.TOKEN_STRING,
+      process.env.TOKEN_STRING
       // { expiresIn: "1h" }
     );
   } catch (error) {
@@ -124,40 +119,154 @@ const logIn = async (req, res, next) => {
   }
 
   res.status(201);
-  res.json({ userId: identifiedUser.id , token: token});
+  res.json({ userId: identifiedUser.id, token: token });
 };
 
 const signUpGoogle = async (req, res, next) => {
-  
-  console.log("Code", req.body)
   const { code } = req.body;
-  //TO DO 
-  // 1. Fb and Google user dont have a password
-  // 2. Password is not required
-  // 3. We cannot access to non password users through normal Authenticaton 
-  // 4. Flow
-  //       pass the oAuth code to server
-  //       send request to google api with oAuth code to get me 
-  //       check if email already exists on my db 
-  //       if exists => do normal login returning token 
-  //        not then create a user with no pasword 
 
-  let user ;
+  let user;
   try {
-    const response = await axios.get("https://www.googleapis.com/userinfo/v2/me", {
-        headers: { Authorization: `Bearer ${code}` }
-    });
+    const response = await axios.get(
+      "https://www.googleapis.com/userinfo/v2/me",
+      {
+        headers: { Authorization: `Bearer ${code}` },
+      }
+    );
     user = response.data;
-    
+ 
   } catch (error) {
     console.log(error);
   }
-  console.log("User info",user)
-  res.status(201);
+
+  let hasUser;
+  try {
+    hasUser = await User.findOne({ email: user.email });
+  } catch (error) {
+    return next(
+      new HttpError("Signing up failed, please try again later", 500)
+    );
+  }
+  if (hasUser) {
+    //log in
+    let token;
+    try {
+      token = jwt.sign(
+        { userId: hasUser.id, email: hasUser.email },
+        process.env.TOKEN_STRING
+        // { expiresIn: "1h" }
+      );
+    } catch (error) {
+      return next(new HttpError("Error with token authentication", 500));
+    }
+
+    res.status(201);
+    res.json({ userId: hasUser.id, token: token });
+
+  } else {
+    //signup
+    const createdUser = new User({
+      email: user.email,
+    });
+
+    try {
+      await createdUser.save();
+    } catch (error) {
+      console.log(error);
+      return next(
+        new HttpError("Error while creating a new user, try again please", 500)
+      );
+    }
+
+    let token;
+    try {
+      token = jwt.sign(
+        { userId: createdUser.id, email: createdUser.email },
+        process.env.TOKEN_STRING
+        // { expiresIn: "1h" } To implement- refresh the token automatically once we are on the website
+      );
+    } catch (error) {
+      return next(new HttpError("Error with token authentication", 500));
+    }
+
+    res.status(201);
+    res.json({ userId: createdUser.id, token: token });
+  }
   
+};
+
+const test = async (req, res, next) => {
+  
+  const user = {
+    id: "115075244383602577689",
+    email: "calher@gmail.com",
+    verified_email: true,
+    name: "Carlos Alonso",
+    given_name: "Carlos",
+    family_name: "Alonso",
+    picture:
+      "https://lh3.googleusercontent.com/a/AAcHTtcy-6oY4XVj_z2MXDtmIp4yUWzR8MSf07Iyg-bRyw3g72tS=s96-c",
+    locale: "en",
+  };
+
+  let hasUser;
+  try {
+    hasUser = await User.findOne({ email: user.email });
+  } catch (error) {
+    return next(
+      new HttpError("Signing up failed, please try again later", 500)
+    );
+  }
+ 
+  if (hasUser) {
+    //log in
+    let token;
+    try {
+      token = jwt.sign(
+        { userId: hasUser.id, email: hasUser.email },
+        process.env.TOKEN_STRING
+        // { expiresIn: "1h" }
+      );
+    } catch (error) {
+      return next(new HttpError("Error with token authentication", 500));
+    }
+
+    res.status(201);
+    res.json({ userId: hasUser.id, token: token });
+
+  } else {
+    //signup
+    const createdUser = new User({
+      email: user.email,
+    });
+
+    try {
+      await createdUser.save();
+    } catch (error) {
+      console.log(error);
+      return next(
+        new HttpError("Error while creating a new user, try again please", 500)
+      );
+    }
+
+    let token;
+    try {
+      token = jwt.sign(
+        { userId: createdUser.id, email: createdUser.email },
+        process.env.TOKEN_STRING
+        // { expiresIn: "1h" } To implement- refresh the token automatically once we are on the website
+      );
+    } catch (error) {
+      return next(new HttpError("Error with token authentication", 500));
+    }
+
+    res.status(201);
+    res.json({ userId: createdUser.id, token: token });
+  }
 };
 
 // exports.getUsers = getUsers;
 exports.signUp = signUp;
 exports.logIn = logIn;
-exports.signUpGoogle= signUpGoogle;
+exports.signUpGoogle = signUpGoogle;
+exports.test = test;
